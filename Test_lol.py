@@ -1,36 +1,40 @@
 import pygame
 from abc import ABC, abstractmethod
-### Константы ###
+
+###Константы###
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 PLAYER_SPEED = 10
 
 BACKGROUND_COLOR = (207, 229, 250)
 PLAYER_COLOR = (120, 94, 130)
-GRAVITY = 0.1
+GRAVITY = 0.8
 JUMP_STRENGTH = -15
 MAX_FALL_SPEED = 15
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 
-# Размеры мира
-WORLD_WIDTH = 5000  # Длинное игровое поле для платформера
-WORLD_HEIGHT = SCREEN_HEIGHT *3
-GROUND_HEIGHT = 100  # Высота "земли" от нижнего края экрана
+WORLD_WIDTH = 10000  # Ширина игрового мира
+GROUND_HEIGHT = 0 # Высота "земли" от нижнего края экрана
 GROUND_COLOR = (139, 69, 19)  # Коричневый цвет для земли
 
 ### Константы камеры ###
 CAMERA_WIDTH = SCREEN_WIDTH
-CAMERA_HEIGHT = SCREEN_HEIGHT
-CAMERA_BORDER_LEFT = 0.3  # Границы камеры (30% от ширины)
-CAMERA_BORDER_RIGHT = 0.7
-CAMERA_BORDER_TOP = 0.5
+CAMERA_HEIGHT = SCREEN_HEIGHT  # Камера теперь охватывает весь экран
+
+# Границы свободного движения внутри камеры
+CAMERA_BORDER_LEFT = 0.4
+CAMERA_BORDER_RIGHT = 0.6
+CAMERA_BORDER_TOP = 0.6
 CAMERA_BORDER_BOTTOM = 0.7
 
+# Цвет и прозрачность границ камеры
 CAMERA_BORDER_COLOR = (255, 0, 0)
 CAMERA_BORDER_ALPHA = 128
 CAMERA_BORDER_WIDTH = 2
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -38,7 +42,7 @@ class Player(pygame.sprite.Sprite):
         self.image.fill(PLAYER_COLOR)
         self.rect = self.image.get_rect()
         self.rect.centerx = SCREEN_WIDTH // 2
-        self.rect.bottom = WORLD_HEIGHT - GROUND_HEIGHT  # Позиционируем относительно земли
+        self.rect.bottom = SCREEN_HEIGHT - GROUND_HEIGHT  # Позиционируем относительно земли
         self.change_x = 0
         self.change_y = 0
         self.facing_right = True
@@ -47,13 +51,11 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.rect.x += self.change_x
 
-        # Границы по X (теперь по размерам мира) + тут под кубик
-        if self.rect.left < 155:
-            self.rect.left = 155
-        if self.rect.right > WORLD_WIDTH-155:
-            self.rect.right = WORLD_WIDTH-155
+        if self.rect.left < 0:
+            self.rect.left = 0
+        if self.rect.right > WORLD_WIDTH:
+            self.rect.right = WORLD_WIDTH
 
-        # Гравитация
         if not self.on_ground:
             self.change_y += GRAVITY
             if self.change_y > MAX_FALL_SPEED:
@@ -61,15 +63,14 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.y += self.change_y
 
-        # Проверка столкновения с землей
-        if self.rect.bottom >= WORLD_HEIGHT - GROUND_HEIGHT:
-            self.rect.bottom = WORLD_HEIGHT - GROUND_HEIGHT
+        # Проверка столкновения с землей с учетом GROUND_HEIGHT
+        if self.rect.bottom >= SCREEN_HEIGHT - GROUND_HEIGHT:
+            self.rect.bottom = SCREEN_HEIGHT - GROUND_HEIGHT
             self.change_y = 0
             self.on_ground = True
         else:
             self.on_ground = False
 
-        # Границы по Y
         if self.rect.top < 0:
             self.rect.top = 0
             self.change_y = 0
@@ -100,43 +101,30 @@ class Player(pygame.sprite.Sprite):
 
 class Camera:
     def __init__(self, width, height):
-        self.camera_rect = pygame.Rect(0, WORLD_HEIGHT - SCREEN_HEIGHT, width, height)
+        self.camera_rect = pygame.Rect(0, 0, width, height)
         self.width = width
         self.height = height
         self.offset_x = 0
-        self.offset_y = WORLD_HEIGHT-SCREEN_HEIGHT
+        self.offset_y = 0
 
     def apply(self, rect):
         return rect.move(-self.offset_x, -self.offset_y)
 
     def update(self, target):
-        # Вычисляем границы камеры
         border_left = self.camera_rect.left + self.width * CAMERA_BORDER_LEFT
         border_right = self.camera_rect.right - self.width * (1 - CAMERA_BORDER_RIGHT)
         border_top = self.camera_rect.top + self.height * CAMERA_BORDER_TOP
         border_bottom = self.camera_rect.bottom - self.height * (1 - CAMERA_BORDER_BOTTOM)
 
-        # Горизонтальное движение камеры
         if target.rect.left < border_left:
             self.camera_rect.left = target.rect.left - self.width * CAMERA_BORDER_LEFT
         elif target.rect.right > border_right:
             self.camera_rect.right = target.rect.right + self.width * (1 - CAMERA_BORDER_RIGHT)
 
-        # # Вертикальное движение камеры
         if target.rect.top < border_top:
             self.camera_rect.top = target.rect.top - self.height * CAMERA_BORDER_TOP
         elif target.rect.bottom > border_bottom:
             self.camera_rect.bottom = target.rect.bottom + self.height * (1 - CAMERA_BORDER_BOTTOM)
-
-        # Ограничиваем камеру границами мира
-        if self.camera_rect.left < 0:
-            self.camera_rect.left = 0
-        if self.camera_rect.right > WORLD_WIDTH:
-            self.camera_rect.right = WORLD_WIDTH
-        if self.camera_rect.top < 0:
-            self.camera_rect.top = 0
-        if self.camera_rect.bottom > WORLD_HEIGHT:
-            self.camera_rect.bottom = WORLD_HEIGHT
 
         self.offset_x = self.camera_rect.x
         self.offset_y = self.camera_rect.y
@@ -147,18 +135,18 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("COFFEFU")
 
-    # Создаем игровое поле (длинное по горизонтали)
-    world_surface = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
+    # Создаем мир
+    world_surface = pygame.Surface((WORLD_WIDTH, SCREEN_HEIGHT))
     world_surface.fill(BACKGROUND_COLOR)
 
-    # Рисуем сетку
+    # Рисуем сетку на мире
     for x in range(0, WORLD_WIDTH, 100):
-        pygame.draw.line(world_surface, (200, 200, 200), (x, 0), (x, WORLD_HEIGHT))
-    for y in range(0, WORLD_HEIGHT, 100):
+        pygame.draw.line(world_surface, (200, 200, 200), (x, 0), (x, SCREEN_HEIGHT))
+    for y in range(0, SCREEN_HEIGHT, 100):
         pygame.draw.line(world_surface, (200, 200, 200), (0, y), (WORLD_WIDTH, y))
 
-    # Рисуем землю
-    ground_rect = pygame.Rect(0, WORLD_HEIGHT - GROUND_HEIGHT, WORLD_WIDTH, GROUND_HEIGHT)
+    # Рисуем землю на мире (теперь она часть мирового Surface)
+    ground_rect = pygame.Rect(0, SCREEN_HEIGHT - GROUND_HEIGHT, WORLD_WIDTH, GROUND_HEIGHT)
     pygame.draw.rect(world_surface, GROUND_COLOR, ground_rect)
 
     player = Player()
@@ -193,13 +181,14 @@ def main():
         # Отрисовка
         screen.fill(BLACK)
 
-        # Рисуем видимую часть мира
+        # Рисуем мир со смещением камеры (включая землю)
         screen.blit(world_surface, (-camera.offset_x, -camera.offset_y))
 
         # Рисуем спрайты с учетом смещения камеры
         for sprite in all_sprites:
             screen.blit(sprite.image, camera.apply(sprite.rect))
-            # Визуализация границ камеры (опционально)
+
+        # Визуализация границ камеры (опционально)
         border_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         pygame.draw.rect(border_surface, (*CAMERA_BORDER_COLOR, CAMERA_BORDER_ALPHA),
                          (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT * CAMERA_BORDER_TOP),
@@ -215,6 +204,7 @@ def main():
                          (SCREEN_WIDTH * CAMERA_BORDER_RIGHT, 0,
                           SCREEN_WIDTH * (1 - CAMERA_BORDER_RIGHT), SCREEN_HEIGHT),
                          CAMERA_BORDER_WIDTH)
+
         screen.blit(border_surface, (0, 0))
         pygame.display.flip()
         clock.tick(60)
