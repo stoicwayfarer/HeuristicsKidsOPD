@@ -1,24 +1,25 @@
 import pygame
-from abc import ABC, abstractmethod
-### Константы ###
+
+##### Константы #####
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 PLAYER_SPEED = 10
 
 BACKGROUND_COLOR = (207, 229, 250)
 PLAYER_COLOR = (120, 94, 130)
-GRAVITY = 0.1
+GRAVITY = 0.8
 JUMP_STRENGTH = -15
 MAX_FALL_SPEED = 15
 
+###Цвета###
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+GROUND_COLOR = (139, 69, 19)
 
 # Размеры мира
 WORLD_WIDTH = 5000  # Длинное игровое поле для платформера
 WORLD_HEIGHT = SCREEN_HEIGHT *3
 GROUND_HEIGHT = 100  # Высота "земли" от нижнего края экрана
-GROUND_COLOR = (139, 69, 19)  # Коричневый цвет для земли
 
 ### Константы камеры ###
 CAMERA_WIDTH = SCREEN_WIDTH
@@ -31,6 +32,7 @@ CAMERA_BORDER_BOTTOM = 0.7
 CAMERA_BORDER_COLOR = (255, 0, 0)
 CAMERA_BORDER_ALPHA = 128
 CAMERA_BORDER_WIDTH = 2
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -47,13 +49,12 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.rect.x += self.change_x
 
-        # Границы по X (теперь по размерам мира) + тут под кубик
+        # Границы по X +тут под кубик
         if self.rect.left < 155:
             self.rect.left = 155
         if self.rect.right > WORLD_WIDTH-155:
             self.rect.right = WORLD_WIDTH-155
 
-        # Гравитация
         if not self.on_ground:
             self.change_y += GRAVITY
             if self.change_y > MAX_FALL_SPEED:
@@ -61,7 +62,7 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.y += self.change_y
 
-        # Проверка столкновения с землей
+        # Cтолкновения с землей
         if self.rect.bottom >= WORLD_HEIGHT - GROUND_HEIGHT:
             self.rect.bottom = WORLD_HEIGHT - GROUND_HEIGHT
             self.change_y = 0
@@ -110,7 +111,7 @@ class Camera:
         return rect.move(-self.offset_x, -self.offset_y)
 
     def update(self, target):
-        # Вычисляем границы камеры
+        # Границы камеры
         border_left = self.camera_rect.left + self.width * CAMERA_BORDER_LEFT
         border_right = self.camera_rect.right - self.width * (1 - CAMERA_BORDER_RIGHT)
         border_top = self.camera_rect.top + self.height * CAMERA_BORDER_TOP
@@ -122,7 +123,7 @@ class Camera:
         elif target.rect.right > border_right:
             self.camera_rect.right = target.rect.right + self.width * (1 - CAMERA_BORDER_RIGHT)
 
-        # # Вертикальное движение камеры
+        # Вертикальное движение камеры
         if target.rect.top < border_top:
             self.camera_rect.top = target.rect.top - self.height * CAMERA_BORDER_TOP
         elif target.rect.bottom > border_bottom:
@@ -141,23 +142,98 @@ class Camera:
         self.offset_x = self.camera_rect.x
         self.offset_y = self.camera_rect.y
 
+###Стартовое окно###
+def start_screen():
+    global SCREEN_WIDTH, SCREEN_HEIGHT, BLACK, WHITE
+    pygame.init()
+    start_screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("COFFEFU")
+
+
+    background = pygame.image.load("Image/Test.Fon.jpg").convert()  #Фон старт окна
+    background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT)) 
+
+    #Шрифты
+    title_font = pygame.font.Font('Fonts/MochiyPopOne-Regular.ttf', 54)
+    developers_font = pygame.font.SysFont('Comic Sans MS',54)
+    button_font = pygame.font.SysFont('Comic Sans MS', 36)
+
+    # Текст
+    title_text = title_font.render("COFFEFU", True, BLACK)
+    developers_text= developers_font.render("Heuristics kids", True, BLACK)
+    start_text = button_font.render("Начать игру", True, BLACK)
+    exit_text = button_font.render("Выйти", True, BLACK)
+
+    # Прямоугольники для кнопок
+    start_button = pygame.Rect(850, 500, 200, 50) #dnclesdkn l
+    exit_button = pygame.Rect(300, 350, 200, 50)
+
+    running = True
+    while running:
+        start_screen.blit(background, (0, 0))
+
+        # Отображение текста
+        start_screen.blit(title_text, (800,135)) 
+        start_screen.blit(developers_text,(200,900))
+
+        # Отрисовка кнопок
+        button_surface = pygame.Surface((200, 50), pygame.SRCALPHA)
+        button_surface.fill(WHITE)
+        start_screen.blit(button_surface, (850, 500))#ubcue
+        start_screen.blit(button_surface, (300, 350))
+
+        # Текст на кнопках
+        start_screen.blit(start_text, (850 + (200 - start_text.get_width()) // 2, 500 + (50 - start_text.get_height()) // 2))
+        start_screen.blit(exit_text, (850 + (200 - exit_text.get_width()) // 2, 699 + (50 - exit_text.get_height()) // 2))
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                if event.key == pygame.K_RETURN:
+                    running = False
+                    return True
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = event.pos
+
+                if start_button.collidepoint(mouse_pos):
+                    running = False
+                    return True
+
+                if exit_button.collidepoint(mouse_pos):
+                    running = False
+                    pygame.quit()
+                    return False
+
+    pygame.quit()
+    return False
 
 def main():
+    if not start_screen():
+        return
+    
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("COFFEFU")
 
-    # Создаем игровое поле (длинное по горизонтали)
+    # Игровое поле 
     world_surface = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
     world_surface.fill(BACKGROUND_COLOR)
 
-    # Рисуем сетку
+    # Сетка
     for x in range(0, WORLD_WIDTH, 100):
         pygame.draw.line(world_surface, (200, 200, 200), (x, 0), (x, WORLD_HEIGHT))
     for y in range(0, WORLD_HEIGHT, 100):
         pygame.draw.line(world_surface, (200, 200, 200), (0, y), (WORLD_WIDTH, y))
 
-    # Рисуем землю
+    # "Земля"
     ground_rect = pygame.Rect(0, WORLD_HEIGHT - GROUND_HEIGHT, WORLD_WIDTH, GROUND_HEIGHT)
     pygame.draw.rect(world_surface, GROUND_COLOR, ground_rect)
 
@@ -190,16 +266,16 @@ def main():
         all_sprites.update()
         camera.update(player)
 
-        # Отрисовка
         screen.fill(BLACK)
 
-        # Рисуем видимую часть мира
+        # Видимая часть мира 
         screen.blit(world_surface, (-camera.offset_x, -camera.offset_y))
 
         # Рисуем спрайты с учетом смещения камеры
         for sprite in all_sprites:
             screen.blit(sprite.image, camera.apply(sprite.rect))
-            # Визуализация границ камеры (опционально)
+
+            # Границы камеры
         border_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         pygame.draw.rect(border_surface, (*CAMERA_BORDER_COLOR, CAMERA_BORDER_ALPHA),
                          (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT * CAMERA_BORDER_TOP),
@@ -215,12 +291,13 @@ def main():
                          (SCREEN_WIDTH * CAMERA_BORDER_RIGHT, 0,
                           SCREEN_WIDTH * (1 - CAMERA_BORDER_RIGHT), SCREEN_HEIGHT),
                          CAMERA_BORDER_WIDTH)
+        
+
         screen.blit(border_surface, (0, 0))
         pygame.display.flip()
         clock.tick(60)
 
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
