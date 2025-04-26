@@ -1,5 +1,5 @@
 import pygame
-from abc import ABC, abstractmethod
+import random
 ### Константы ###
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
@@ -19,7 +19,7 @@ GROUND_COLOR = (139, 69, 19)
 # Размеры мира
 WORLD_WIDTH = 5000  # Длинное игровое поле для платформера
 WORLD_HEIGHT = SCREEN_HEIGHT *3
-GROUND_HEIGHT = 100  # Высота "земли" от нижнего края экрана
+GROUND_HEIGHT = 150  # Высота "земли" от нижнего края экрана
 
 ### Константы камеры ###
 CAMERA_WIDTH = SCREEN_WIDTH
@@ -98,6 +98,60 @@ class Player(pygame.sprite.Sprite):
     def flip(self):
         self.image = pygame.transform.flip(self.image, True, False)
 
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x, y, patrol_range=300, speed=3):
+        super().__init__()
+        self.image = pygame.Surface((80, 80))
+        self.image.fill((255,0,0))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.bottom = y
+        self.patrol_range = patrol_range  # Диапазон патрулирования
+        self.speed = speed
+        self.direction = -1  # 1 - вправо, -1 - влево
+        self.start_x = x  # Начальная позиция для патрулирования
+        
+    def update(self):
+        # Движение влево-вправо
+        self.rect.x += self.speed * self.direction
+        
+        # Проверка границ патрулирования
+        if self.rect.x > self.start_x + self.patrol_range:
+            self.direction = -1
+        elif self.rect.x < self.start_x:
+            self.direction = 1
+            
+        # Ограничение по границам мира
+        if self.rect.left < 0:
+            self.rect.left = 0
+            self.direction = 1
+        if self.rect.right > WORLD_WIDTH:
+            self.rect.right = WORLD_WIDTH
+            self.direction = -1
+       
+
+	
+def generate_enemies(count=5):
+	enemies = pygame.sprite.Group()
+
+	for _ in range(count):
+		# Случайные параметры для врага
+		x = random.randint(200, WORLD_WIDTH - 200)  # Не слишком близко к краям
+		patrol_range = random.randint(200, 600)  # Разный диапазон патрулирования
+		speed = random.uniform(2, 6)  # Разная скорость
+		
+		# Создаем врага на уровне земли
+		enemy = Enemy(x, WORLD_HEIGHT - GROUND_HEIGHT, patrol_range, speed)
+		
+		# Проверяем, чтобы враги не пересекались друг с другом
+		while any(e.rect.colliderect(enemy.rect) for e in enemies):
+			x = random.randint(200, WORLD_WIDTH - 200)
+			enemy.rect.x = x
+		
+		enemies.add(enemy)
+
+	return enemies      
+        
 
 class Camera:
     def __init__(self, width, height):
@@ -238,7 +292,14 @@ def main():
     pygame.draw.rect(world_surface, GROUND_COLOR, ground_rect)
 
     player = Player()
-    all_sprites = pygame.sprite.Group(player)
+    enemies = generate_enemies(10)
+    all_sprites = pygame.sprite.Group(player,enemies)
+	
+    # enemy1 = Enemy(500, WORLD_HEIGHT - GROUND_HEIGHT , 1000, 10)
+    # enemy2 = Enemy(1500, WORLD_HEIGHT - GROUND_HEIGHT, 200, 4)
+    # enemy3 = Enemy(3000, WORLD_HEIGHT - GROUND_HEIGHT, 600, 7)
+
+    # all_sprites = pygame.sprite.Group(player,enemy1, enemy2, enemy3)
     camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
 
     running = True
