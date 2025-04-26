@@ -220,7 +220,7 @@ def start_screen():
 
     # Прямоугольники для кнопок
     start_button = pygame.Rect(850, 500, 200, 50) #dnclesdkn l
-    exit_button = pygame.Rect(300, 350, 200, 50)
+    exit_button = pygame.Rect(850, 699, 200, 50)
 
     running = True
     while running:
@@ -234,7 +234,7 @@ def start_screen():
         button_surface = pygame.Surface((200, 50), pygame.SRCALPHA)
         button_surface.fill(WHITE)
         start_screen.blit(button_surface, (850, 500))#ubcue
-        start_screen.blit(button_surface, (300, 350))
+        start_screen.blit(button_surface, (850, 699))
 
         # Текст на кнопках
         start_screen.blit(start_text, (850 + (200 - start_text.get_width()) // 2, 500 + (50 - start_text.get_height()) // 2))
