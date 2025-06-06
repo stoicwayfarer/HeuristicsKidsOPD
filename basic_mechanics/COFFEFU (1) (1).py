@@ -4,6 +4,8 @@ from config import *
 from spritesheet import Spritesheet
 from tilemap import *
 
+#pip install -r requirements.txt для установки пакетов из файла, необходимых для игры
+
 def main():
     pygame.init()
     screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
