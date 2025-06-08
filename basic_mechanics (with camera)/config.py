@@ -1,0 +1,27 @@
+SCREEN_WIDTH = 1500
+SCREEN_HEIGHT = 750
+
+PLAYER_SPEED = 10
+enemy_positions = [
+        (300, 420),  
+        (350, 270),
+        (700, 420)
+    ]
+
+ANIMATION_DELAY = 200
+
+BACKGROUND_COLOR = (207, 229, 250)
+PLAYER_COLOR = (120, 94, 130)
+GRAVITY = 0.8
+FRICTION = -.12
+JUMP_STRENGTH = -15
+MAX_FALL_SPEED = 15
+START_POSITION_LVL_1 = (200,620)
+
+###Цвета###
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
+# размеры мира игры
+WORLD_WIDTH = 5000  
+WORLD_HEIGHT = 750
