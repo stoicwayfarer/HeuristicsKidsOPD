@@ -5,10 +5,11 @@ from tilemap import *
 from animations import *
 from spritesheet import Spritesheet
 from player import Player, Enemy
-
 from Music import *
 from Screens import *
 from Camera import *
+
+#pip install -r requirements.txt для установки пакетов из файла, необходимых для игры
 
 class Level:
     def __init__(self, level_number, map_file, enemy_positions):
