@@ -257,7 +257,7 @@ def main():
 
         screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Game Levels")
+        pygame.display.set_caption("Candy Runner")
         clock = pygame.time.Clock()
 
         #задаем позиции врагов
